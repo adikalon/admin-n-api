@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  postgres:
+    container_name: postgres
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_BASENAME}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    image: postgres:13.1-alpine
+    networks:
+      - webnet
+    restart: always
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  adminer:
+    container_name: adminer
+    depends_on:
+      - postgres
+    image: adminer:4.7.7
+    networks:
+      - webnet
+    ports:
+      - ${ADMINER_PORT}:8080
+    restart: always
+
+  app:
+    build:
+      context: .
+      target: ${NODE_ENV}
+    command: sh run.sh
+    container_name: app
+    depends_on:
+      - postgres
+    env_file:
+      - .env
+    networks:
+      - webnet
+    ports:
+      - ${NEST_PORT}:${NEST_PORT}
+      - 9229:9229
+    restart: always
+    user: ${UID}:${GID}
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+
+volumes:
+  pgdata:
+
+networks:
+  webnet:
