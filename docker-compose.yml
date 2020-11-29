@@ -1,14 +1,61 @@
 version: '3.8'
 
 services:
+  elasticsearch:
+    container_name: elasticsearch
+    environment:
+      discovery.type: single-node
+    image: elasticsearch:7.9.3
+    networks:
+      - elastic
+    restart: always
+    volumes:
+      - elasticsearch:/usr/share/elasticsearch/data
+    # expose:
+    #   - "9200"
+    # ports:
+    #   - "9200:9200"
+
+  fluentd:
+    build: ./fluentd
+    container_name: fluentd
+    depends_on:
+      - elasticsearch
+    networks:
+      - elastic
+    ports:
+      - 24224:24224
+      - 24224:24224/udp
+    restart: always
+    volumes:
+      - ./fluentd/conf:/fluentd/etc
+
+  kibana:
+    container_name: kibana
+    depends_on:
+      - elasticsearch
+    image: kibana:7.9.3
+    networks:
+      - elastic
+    ports:
+      - ${KIBANA_PORT}:5601
+    restart: always
+
   postgres:
     container_name: postgres
+    depends_on:
+      - fluentd
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_BASENAME}
       PGDATA: /var/lib/postgresql/data/pgdata
     image: postgres:13.1-alpine
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: localhost:24224
+        tag: postgres
     networks:
       - webnet
     restart: always
@@ -19,7 +66,13 @@ services:
     container_name: adminer
     depends_on:
       - postgres
+      - fluentd
     image: adminer:4.7.7
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: localhost:24224
+        tag: adminer
     networks:
       - webnet
     ports:
@@ -34,8 +87,14 @@ services:
     container_name: app
     depends_on:
       - postgres
+      - fluentd
     env_file:
       - .env
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: localhost:24224
+        tag: app
     networks:
       - webnet
     ports:
@@ -49,6 +108,12 @@ services:
 
 volumes:
   pgdata:
+    driver: local
+    external: false
+  elasticsearch:
+    driver: local
+    external: false
 
 networks:
   webnet:
+  elastic:
