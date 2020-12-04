@@ -1,11 +1,36 @@
 version: '3.8'
 
 services:
+  traefik:
+    command:
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=default
+      - --entrypoints.web.address=:8080
+      - --api
+    container_name: traefik
+    image: traefik:v2.3.4
+    labels:
+      - traefik.enable=true
+      - traefik.http.middlewares.auth.basicauth.users=${HTTP_USER}:${HTTP_PASSWORD}
+    networks:
+      - webnet
+    ports:
+      - ${PORT}:8080
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
   dozzle:
     container_name: dozzle
+    depends_on:
+      - traefik
     image: amir20/dozzle:v3.0.3
-    ports:
-      - ${DOZZLE_PORT}:8080
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.dozzle.rule=Host(`dozzle.${HOST}`)
+      - traefik.http.routers.dozzle.entrypoints=web
+      - traefik.http.routers.dozzle.middlewares=auth
+      - traefik.http.services.dozzle.loadbalancer.server.port=8080
     networks:
       - webnet
     restart: always
@@ -16,9 +41,9 @@ services:
     container_name: postgres
     environment:
       TZ: ${TZ}
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_BASENAME}
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+      POSTGRES_DB: ${PG_BASENAME}
       PGDATA: /var/lib/postgresql/data/pgdata
     image: postgres:13.1-alpine
     networks:
@@ -31,11 +56,15 @@ services:
     container_name: adminer
     depends_on:
       - postgres
+      - traefik
     image: adminer:4.7.7
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.adminer.rule=Host(`adminer.${HOST}`)
+      - traefik.http.routers.adminer.entrypoints=web
+      - traefik.http.services.adminer.loadbalancer.server.port=8080
     networks:
       - webnet
-    ports:
-      - ${ADMINER_PORT}:8080
     restart: always
 
   nest:
@@ -46,12 +75,17 @@ services:
     container_name: nest
     depends_on:
       - postgres
+      - traefik
     env_file:
       - .env
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.nest.rule=Host(`${HOST}`)
+      - traefik.http.routers.nest.entrypoints=web
+      - traefik.http.services.nest.loadbalancer.server.port=8080
     networks:
       - webnet
     ports:
-      - ${NEST_PORT}:${NEST_PORT}
       - 9229:9229
     restart: always
     user: ${UID}:${GID}

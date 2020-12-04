@@ -14,7 +14,7 @@ import { AppService } from './app.service';
       host: 'postgres',
       port: 5432,
       username: 'dev',
-      password: 'asx123',
+      password: 'dev',
       database: 'admin-n-api',
       entities: [],
       synchronize: true,
