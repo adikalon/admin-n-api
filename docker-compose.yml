@@ -16,7 +16,7 @@ services:
       - webnet
     ports:
       - ${PORT}:8080
-    restart: always
+    restart: ${RESTART}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
 
@@ -33,7 +33,7 @@ services:
       - traefik.http.services.dozzle.loadbalancer.server.port=8080
     networks:
       - webnet
-    restart: always
+    restart: ${RESTART}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
 
@@ -48,7 +48,7 @@ services:
     image: postgres:13.1-alpine
     networks:
       - webnet
-    restart: always
+    restart: ${RESTART}
     volumes:
       - postgres:/var/lib/postgresql/data
 
@@ -65,7 +65,7 @@ services:
       - traefik.http.services.adminer.loadbalancer.server.port=8080
     networks:
       - webnet
-    restart: always
+    restart: ${RESTART}
 
   nest:
     build:
@@ -87,7 +87,7 @@ services:
       - webnet
     ports:
       - 9229:9229
-    restart: always
+    restart: ${RESTART}
     user: ${UID}:${GID}
     volumes:
       - .:/usr/src/app
