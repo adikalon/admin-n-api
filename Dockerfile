@@ -1,4 +1,6 @@
-FROM node:15.3.0-alpine AS development
+ARG tag
+
+FROM node:$tag AS development
 WORKDIR /usr/src/app
 COPY package*.json ./
 RUN \
@@ -12,7 +14,7 @@ RUN \
   npm install --only=development
 COPY . .
 
-FROM node:15.3.0-alpine AS debug
+FROM node:$tag AS debug
 WORKDIR /usr/src/app
 COPY package*.json ./
 RUN \
@@ -26,7 +28,7 @@ RUN \
   npm install --only=development
 COPY . .
 
-FROM node:15.3.0-alpine AS production
+FROM node:$tag AS production
 ARG NODE_ENV=production
 ENV NODE_ENV=${NODE_ENV}
 WORKDIR /usr/src/app

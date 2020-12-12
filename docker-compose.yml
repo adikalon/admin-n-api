@@ -1,36 +1,29 @@
 version: '3.8'
 
 services:
-  traefik:
-    command:
-      - --providers.docker.exposedbydefault=false
-      - --providers.docker.network=default
-      - --entrypoints.web.address=:8080
-      - --api
-    container_name: traefik
-    image: traefik:v2.3.4
-    labels:
-      - traefik.enable=true
-      - traefik.http.middlewares.auth.basicauth.users=${HTTP_USER}:${HTTP_PASSWORD}
+  nginx:
+    container_name: ${PREFIX}-nginx
+    image: nginx:${TAG_NGINX}
     networks:
       - webnet
     ports:
       - ${PORT}:8080
     restart: ${RESTART}
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - type: bind
+        source: ./docker/config/nginx.conf
+        target: /etc/nginx/conf.d/config.conf
+        read_only: true
+      - type: bind
+        source: ./docker/config/.htpasswd
+        target: /etc/nginx/conf.d/.htpasswd
+        read_only: true
 
   dozzle:
-    container_name: dozzle
+    container_name: ${PREFIX}-dozzle
     depends_on:
-      - traefik
-    image: amir20/dozzle:v3.0.3
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.dozzle.rule=Host(`dozzle.${HOST}`)
-      - traefik.http.routers.dozzle.entrypoints=web
-      - traefik.http.routers.dozzle.middlewares=auth
-      - traefik.http.services.dozzle.loadbalancer.server.port=8080
+      - nginx
+    image: amir20/dozzle:${TAG_DOZZLE}
     networks:
       - webnet
     restart: ${RESTART}
@@ -38,14 +31,14 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
 
   postgres:
-    container_name: postgres
+    container_name: ${PREFIX}-postgres
     environment:
       TZ: ${TZ}
       POSTGRES_USER: ${PG_USER}
       POSTGRES_PASSWORD: ${PG_PASSWORD}
       POSTGRES_DB: ${PG_BASENAME}
       PGDATA: /var/lib/postgresql/data/pgdata
-    image: postgres:13.1-alpine
+    image: postgres:${TAG_POSTGRES}
     networks:
       - webnet
     restart: ${RESTART}
@@ -53,36 +46,30 @@ services:
       - postgres:/var/lib/postgresql/data
 
   adminer:
-    container_name: adminer
+    container_name: ${PREFIX}-adminer
     depends_on:
       - postgres
-      - traefik
-    image: adminer:4.7.7
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.adminer.rule=Host(`adminer.${HOST}`)
-      - traefik.http.routers.adminer.entrypoints=web
-      - traefik.http.services.adminer.loadbalancer.server.port=8080
+      - nginx
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    image: adminer:${TAG_ADMINER}
     networks:
       - webnet
     restart: ${RESTART}
 
   nest:
     build:
+      args:
+        tag: ${TAG_NODE}
       context: .
       target: ${NODE_ENV}
     command: sh run.sh
-    container_name: nest
+    container_name: ${PREFIX}-nest
     depends_on:
       - postgres
-      - traefik
+      - nginx
     env_file:
       - .env
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.nest.rule=Host(`${HOST}`)
-      - traefik.http.routers.nest.entrypoints=web
-      - traefik.http.services.nest.loadbalancer.server.port=8080
     networks:
       - webnet
     ports:
@@ -95,9 +82,11 @@ services:
 
 volumes:
   postgres:
+    name: ${PREFIX}-postgres
     driver: local
     external: false
 
 networks:
   webnet:
+    name: ${PREFIX}-server
     driver: bridge
