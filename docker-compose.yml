@@ -26,6 +26,8 @@ services:
     image: amir20/dozzle:${TAG_DOZZLE}
     networks:
       - webnet
+    ports:
+      - ${PORT_DOZZLE}:8080
     restart: ${RESTART}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -56,6 +58,8 @@ services:
     image: adminer:${TAG_ADMINER}
     networks:
       - webnet
+    ports:
+      - ${PORT_ADMINER}:8080
     restart: ${RESTART}
 
   nest:
@@ -78,8 +82,9 @@ services:
     restart: ${RESTART}
     user: ${UID}:${GID}
     volumes:
-      - .:/usr/src/app
-      - /usr/src/app/node_modules
+      - .:/home/node/app
+      - /home/node/app/node_modules
+      - /home/node/app/dist
 
 volumes:
   postgres:

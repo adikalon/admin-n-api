@@ -3,5 +3,5 @@ if [ ${NODE_ENV} = "development" ]; then
 elif [ ${NODE_ENV} = "debug" ]; then
   npm run start:debug
 else
-  npm run start:prod
+  node dist/main
 fi
