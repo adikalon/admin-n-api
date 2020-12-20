@@ -11,7 +11,7 @@ RUN \
   rm -r /var/cache/apk/* && \
   mkdir -p /usr/share/zoneinfo/Europe && \
   ln -s /etc/localtime /usr/share/zoneinfo/${TZ} && \
-  npm install --only=development
+  npm install
 COPY . .
 RUN npm run build
 
@@ -25,7 +25,7 @@ RUN \
   rm -r /var/cache/apk/* && \
   mkdir -p /usr/share/zoneinfo/Europe && \
   ln -s /etc/localtime /usr/share/zoneinfo/${TZ} && \
-  npm install --only=development
+  npm install
 COPY --from=development /home/node/app .
 
 FROM node:$tag AS production
