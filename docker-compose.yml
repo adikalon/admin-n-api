@@ -3,16 +3,21 @@ version: '3.8'
 services:
   nginx:
     container_name: ${PREFIX}-nginx
+    environment:
+      PORT_ADMINER: ${PORT_ADMINER}
+      PORT_DOZZLE: ${PORT_DOZZLE}
     image: nginx:${TAG_NGINX}
     networks:
       - webnet
     ports:
       - ${PORT}:8080
+      - ${PORT_ADMINER}:${PORT_ADMINER}
+      - ${PORT_DOZZLE}:${PORT_DOZZLE}
     restart: ${RESTART}
     volumes:
       - type: bind
         source: ./docker/config/nginx.conf
-        target: /etc/nginx/conf.d/config.conf
+        target: /etc/nginx/templates/nginx.conf.template
         read_only: true
       - type: bind
         source: ./docker/config/.htpasswd
@@ -26,8 +31,6 @@ services:
     image: amir20/dozzle:${TAG_DOZZLE}
     networks:
       - webnet
-    ports:
-      - ${PORT_DOZZLE}:8080
     restart: ${RESTART}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -58,8 +61,6 @@ services:
     image: adminer:${TAG_ADMINER}
     networks:
       - webnet
-    ports:
-      - ${PORT_ADMINER}:8080
     restart: ${RESTART}
 
   nest:
