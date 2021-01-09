@@ -1,46 +1,56 @@
 ARG tag
 
 FROM node:$tag AS development
-WORKDIR /home/node/app
-COPY package*.json ./
+ARG uid
+ARG gid
 RUN \
-  apk --update add curl bash nano tzdata && \
-  cp -r /usr/share/zoneinfo/${TZ} /etc/localtime && \
-  echo "${TZ}" > /etc/timezone && \
-  apk del tzdata && \
-  rm -r /var/cache/apk/* && \
-  mkdir -p /usr/share/zoneinfo/Europe && \
-  ln -s /etc/localtime /usr/share/zoneinfo/${TZ} && \
-  npm install
-COPY . .
+  apk add --no-cache shadow \
+  && usermod -u $uid node \
+  && groupmod -g $gid node \
+  && mkdir -p /home/node/app \
+  && chown -R node:node /home/node/app \
+  && mkdir -p /home/node/app/.adminbro \
+  && chown -R node:node /home/node/app/.adminbro
+WORKDIR /home/node/app
+USER node
+COPY --chown=node:node package*.json ./
+RUN npm install
+COPY --chown=node:node . .
 RUN npm run build
 
 FROM node:$tag AS debug
-WORKDIR /home/node/app
+ARG uid
+ARG gid
 RUN \
-  apk --update add curl bash nano tzdata && \
-  cp -r /usr/share/zoneinfo/${TZ} /etc/localtime && \
-  echo "${TZ}" > /etc/timezone && \
-  apk del tzdata && \
-  rm -r /var/cache/apk/* && \
-  mkdir -p /usr/share/zoneinfo/Europe && \
-  ln -s /etc/localtime /usr/share/zoneinfo/${TZ} && \
-  npm install
-COPY --from=development /home/node/app .
+  apk add --no-cache shadow \
+  && usermod -u $uid node \
+  && groupmod -g $gid node \
+  && mkdir -p /home/node/app \
+  && chown -R node:node /home/node/app \
+  && mkdir -p /home/node/app/.adminbro \
+  && chown -R node:node /home/node/app/.adminbro
+WORKDIR /home/node/app
+USER node
+COPY --chown=node:node package*.json ./
+RUN npm install
+COPY --chown=node:node --from=development /home/node/app .
 
 FROM node:$tag AS production
+ARG uid
+ARG gid
 ARG NODE_ENV=production
 ENV NODE_ENV=${NODE_ENV}
-WORKDIR /home/node/app
-COPY package*.json ./
 RUN \
-  apk --update add curl bash nano tzdata && \
-  cp -r /usr/share/zoneinfo/${TZ} /etc/localtime && \
-  echo "${TZ}" > /etc/timezone && \
-  apk del tzdata && \
-  rm -r /var/cache/apk/* && \
-  mkdir -p /usr/share/zoneinfo/Europe && \
-  ln -s /etc/localtime /usr/share/zoneinfo/${TZ} && \
-  npm install --only=production
-COPY . .
-COPY --from=development /home/node/app/dist ./dist
+  apk add --no-cache shadow \
+  && usermod -u $uid node \
+  && groupmod -g $gid node \
+  && mkdir -p /home/node/app \
+  && chown -R node:node /home/node/app \
+  && mkdir -p /home/node/app/.adminbro \
+  && chown -R node:node /home/node/app/.adminbro
+WORKDIR /home/node/app
+USER node
+COPY --chown=node:node package*.json ./
+RUN npm install --only=production
+COPY --chown=node:node . .
+COPY --chown=node:node --from=development /home/node/app/dist ./dist

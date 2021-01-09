@@ -1,6 +1,8 @@
 # compiled output
-/dist
+/dist/*
+!/dist/.gitkeep
 /node_modules
+!/node_modules/.gitkeep
 
 # Logs
 logs
@@ -34,6 +36,7 @@ lerna-debug.log*
 !.vscode/extensions.json
 
 # AdminBro
-/.adminbro
+/.adminbro/*
+!/.adminbro/.gitkeep
 
 .env
