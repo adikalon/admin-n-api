@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AdminModule } from '@admin-bro/nestjs';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import * as Joi from 'joi';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -13,8 +13,9 @@ import { AppService } from './app.service';
      */
     ConfigModule.forRoot({
       validationSchema: Joi.object({
-        // PORT: Joi.number().required(),
-        // APP_NAME: Joi.string().required(),
+        PG_USER: Joi.string().required(),
+        PG_PASSWORD: Joi.string().required(),
+        PG_BASENAME: Joi.string().required(),
       }),
       expandVariables: true,
       isGlobal: true,
@@ -23,15 +24,19 @@ import { AppService } from './app.service';
     /**
      * TypeORM
      */
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: 'postgres',
-      port: 5432,
-      username: 'dev',
-      password: 'dev',
-      database: 'admin-n-api',
-      entities: [],
-      synchronize: true,
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        type: 'postgres',
+        port: 5432,
+        host: 'postgres',
+        username: configService.get('PG_USER'),
+        password: configService.get('PG_PASSWORD'),
+        database: configService.get('PG_BASENAME'),
+        entities: [],
+        synchronize: true,
+      }),
+      inject: [ConfigService],
     }),
 
     /**
