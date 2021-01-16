@@ -5,6 +5,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import * as Joi from 'joi';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
@@ -13,9 +14,12 @@ import { AppService } from './app.service';
      */
     ConfigModule.forRoot({
       validationSchema: Joi.object({
+        NODE_ENV: Joi.string().valid('development', 'production', 'debug'),
         PG_USER: Joi.string().required(),
         PG_PASSWORD: Joi.string().required(),
         PG_BASENAME: Joi.string().required(),
+        CLI_POSTGRES_PORT: Joi.number().required(),
+        CLI_POSTGRES_HOST: Joi.string().required(),
       }),
       expandVariables: true,
       isGlobal: true,
@@ -33,8 +37,8 @@ import { AppService } from './app.service';
         username: configService.get('PG_USER'),
         password: configService.get('PG_PASSWORD'),
         database: configService.get('PG_BASENAME'),
-        entities: [],
-        synchronize: true,
+        synchronize: false,
+        autoLoadEntities: true,
       }),
       inject: [ConfigService],
     }),
@@ -48,6 +52,11 @@ import { AppService } from './app.service';
         resources: [],
       },
     }),
+
+    /**
+     * Custom modules
+     */
+    UserModule,
   ],
   controllers: [AppController],
   providers: [AppService],

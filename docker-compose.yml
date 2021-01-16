@@ -21,6 +21,8 @@ services:
     image: postgres:${TAG_POSTGRES}
     networks:
       - webnet
+    ports:
+      - ${CLI_POSTGRES_PORT}:5432
     restart: ${RESTART}
     volumes:
       - postgres:/var/lib/postgresql/data
