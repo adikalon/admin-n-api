@@ -5,10 +5,11 @@ import {
   UpdateDateColumn,
   DeleteDateColumn,
   Column,
+  BaseEntity,
 } from 'typeorm';
 
 @Entity()
-export class User {
+export class User extends BaseEntity {
   @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
   id: number;
 

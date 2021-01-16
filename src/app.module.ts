@@ -6,6 +6,11 @@ import * as Joi from 'joi';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UserModule } from './user/user.module';
+import { User } from './user/user.entity';
+import AdminBro from 'admin-bro';
+import { Database, Resource } from '@admin-bro/typeorm';
+
+AdminBro.registerAdapter({ Database, Resource });
 
 @Module({
   imports: [
@@ -49,7 +54,7 @@ import { UserModule } from './user/user.module';
     AdminModule.createAdmin({
       adminBroOptions: {
         rootPath: '/admin',
-        resources: [],
+        resources: [User],
       },
     }),
 
