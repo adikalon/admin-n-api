@@ -17,8 +17,10 @@ export class DefaultExceptionFilter extends BaseExceptionFilter {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     let error = string.unknown;
+    let status = 520;
 
     if (exception instanceof HttpException) {
+      status = exception.getStatus();
       let res = exception.getResponse();
 
       if (typeof res === 'object') {
@@ -29,6 +31,7 @@ export class DefaultExceptionFilter extends BaseExceptionFilter {
         exception.stack
       }`;
     } else if (exception instanceof Error) {
+      status = HttpStatus.INTERNAL_SERVER_ERROR;
       let res = exception.message;
 
       if (typeof res === 'object') {
@@ -40,7 +43,7 @@ export class DefaultExceptionFilter extends BaseExceptionFilter {
 
     this.logger.error(error);
 
-    response.status(HttpStatus.OK).json({
+    response.status(status).json({
       succsess: false,
       error: string.hidden,
     });
