@@ -1,13 +1,15 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Post, UseInterceptors } from '@nestjs/common';
 import { LoginPhoneDto } from './dto/login-phone.dto';
 import { UserService } from './services/user.service';
+import { SuccessInterceptor } from '../common/interceptors/success.interceptor';
 
 @Controller('api/user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Post('login/phone')
-  loginPhone(@Body() form: LoginPhoneDto): any {
-    return form;
+  @UseInterceptors(SuccessInterceptor)
+  async loginPhone(@Body() form: LoginPhoneDto): Promise<void> {
+    return;
   }
 }
