@@ -4,11 +4,13 @@ import { AdminModule } from '@admin-bro/nestjs';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import * as Joi from 'joi';
 import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { UserModule } from './user/user.module';
-import { User } from './user/user.entity';
+import { User } from './user/entities/user.entity';
 import AdminBro from 'admin-bro';
 import { Database, Resource } from '@admin-bro/typeorm';
+import { Authorization } from './user/entities/authorization.entity';
+import { RegisterPhone } from './user/entities/register-phone.entity';
+import { RegisterEmail } from './user/entities/register-email.entity';
 
 AdminBro.registerAdapter({ Database, Resource });
 
@@ -42,7 +44,7 @@ AdminBro.registerAdapter({ Database, Resource });
         username: configService.get('PG_USER'),
         password: configService.get('PG_PASSWORD'),
         database: configService.get('PG_BASENAME'),
-        synchronize: false,
+        synchronize: true,
         autoLoadEntities: true,
       }),
       inject: [ConfigService],
@@ -51,12 +53,12 @@ AdminBro.registerAdapter({ Database, Resource });
     /**
      * AdminBro
      */
-    AdminModule.createAdmin({
-      adminBroOptions: {
-        rootPath: '/admin',
-        resources: [User],
-      },
-    }),
+    // AdminModule.createAdmin({
+    //   adminBroOptions: {
+    //     rootPath: '/admin',
+    //     resources: [User, Authorization, RegisterPhone, RegisterEmail],
+    //   },
+    // }),
 
     /**
      * Custom modules
@@ -64,6 +66,6 @@ AdminBro.registerAdapter({ Database, Resource });
     UserModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [],
 })
 export class AppModule {}
