@@ -16,7 +16,7 @@ export class RegisterPhone extends BaseEntity {
   @Column({ type: 'bigint', unsigned: true })
   phone: number;
 
-  @Column({ type: 'varchar', unique: true })
+  @Column({ type: 'varchar', unique: true, select: false })
   code: string;
 
   @Column({ nullable: true })
@@ -24,6 +24,9 @@ export class RegisterPhone extends BaseEntity {
 
   @ManyToOne(() => User, (user) => user.registerPhones, { nullable: true })
   user!: User;
+
+  @Column({ type: 'timestamp' })
+  activeTo: Date;
 
   @CreateDateColumn()
   createdAt: Date;

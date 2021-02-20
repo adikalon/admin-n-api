@@ -26,7 +26,7 @@ export class User extends BaseEntity {
   @Column({ type: 'varchar', nullable: true, unique: true })
   login: string;
 
-  @Column({ type: 'varchar', nullable: true })
+  @Column({ type: 'varchar', nullable: true, select: false })
   password: string;
 
   @CreateDateColumn()

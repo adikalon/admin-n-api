@@ -27,8 +27,11 @@ export class Authorization extends BaseEntity {
   @Column({ type: 'varchar' })
   userAgent: string;
 
-  @Column({ type: 'varchar', unique: true })
+  @Column({ type: 'varchar', unique: true, select: false })
   token: string;
+
+  @Column({ type: 'timestamp' })
+  activeTo: Date;
 
   @CreateDateColumn()
   createdAt: Date;

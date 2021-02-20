@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { BaseExceptionFilter } from '@nestjs/core';
 import { Request, Response } from 'express';
+import { QueryFailedError } from 'typeorm';
 import string from '../strings/exception';
 
 @Catch()
@@ -37,6 +38,11 @@ export class DefaultExceptionFilter extends BaseExceptionFilter {
       }
 
       error = res;
+    } else if (exception instanceof QueryFailedError) {
+      status = HttpStatus.INTERNAL_SERVER_ERROR;
+      title = exception.name;
+      stack = exception.stack.replace(/ {4}/g, '  ');
+      error = JSON.stringify(exception, null, 2);
     } else if (exception instanceof Error) {
       status = HttpStatus.INTERNAL_SERVER_ERROR;
       title = exception.name;

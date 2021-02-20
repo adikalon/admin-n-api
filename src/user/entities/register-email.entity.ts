@@ -16,7 +16,7 @@ export class RegisterEmail extends BaseEntity {
   @Column({ type: 'varchar' })
   email: string;
 
-  @Column({ type: 'varchar', unique: true })
+  @Column({ type: 'varchar', unique: true, select: false })
   token: string;
 
   @Column({ nullable: true })
@@ -24,6 +24,9 @@ export class RegisterEmail extends BaseEntity {
 
   @ManyToOne(() => User, (user) => user.registerEmails, { nullable: true })
   user!: User;
+
+  @Column({ type: 'timestamp' })
+  activeTo: Date;
 
   @CreateDateColumn()
   createdAt: Date;
