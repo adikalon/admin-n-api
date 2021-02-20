@@ -6,4 +6,5 @@ export default {
   generateTokenAttempt: 10,
   activeToCode: 500,
   activeToToken: 86400 * 30,
+  reSendCode: 60,
 };

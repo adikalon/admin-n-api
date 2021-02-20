@@ -24,6 +24,7 @@ export class DefaultExceptionFilter extends BaseExceptionFilter {
     const url = request.url;
     const headers = JSON.stringify(request.headers, null, 2);
     const body = JSON.stringify(request.body, null, 2);
+    let data: any;
     let error = '';
     let stack = '';
 
@@ -32,6 +33,7 @@ export class DefaultExceptionFilter extends BaseExceptionFilter {
       title = exception.message;
       stack = exception.stack.replace(/ {4}/g, '  ');
       let res = exception.getResponse();
+      data = res;
 
       if (typeof res === 'object') {
         res = JSON.stringify(res, null, 2);
@@ -42,12 +44,14 @@ export class DefaultExceptionFilter extends BaseExceptionFilter {
       status = HttpStatus.INTERNAL_SERVER_ERROR;
       title = exception.name;
       stack = exception.stack.replace(/ {4}/g, '  ');
+      data = exception;
       error = JSON.stringify(exception, null, 2);
     } else if (exception instanceof Error) {
       status = HttpStatus.INTERNAL_SERVER_ERROR;
       title = exception.name;
       stack = exception.stack.replace(/ {4}/g, '  ');
       let res = exception.message;
+      data = res;
 
       if (typeof res === 'object') {
         res = JSON.stringify(res, null, 2);
@@ -55,6 +59,7 @@ export class DefaultExceptionFilter extends BaseExceptionFilter {
 
       error = res;
     } else {
+      data = exception;
       error = JSON.stringify(exception, null, 2);
     }
 
@@ -64,7 +69,8 @@ export class DefaultExceptionFilter extends BaseExceptionFilter {
 
     response.status(status).json({
       succsess: false,
-      error: string.hidden,
+      message: title,
+      data: process.env.NODE_ENV === 'development' ? data : null,
     });
   }
 }

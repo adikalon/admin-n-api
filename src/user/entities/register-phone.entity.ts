@@ -22,6 +22,12 @@ export class RegisterPhone extends BaseEntity {
   @Column({ nullable: true })
   userId: number;
 
+  @Column({ type: 'varchar' })
+  ip: string;
+
+  @Column({ type: 'varchar' })
+  userAgent: string;
+
   @ManyToOne(() => User, (user) => user.registerPhones, { nullable: true })
   user!: User;
 

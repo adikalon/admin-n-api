@@ -6,27 +6,50 @@ import {
   PreconditionFailedException,
   Req,
   RequestTimeoutException,
-  UseInterceptors,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { getConnection } from 'typeorm';
 import { PhoneLoginDto } from '../dto/phone-login.dto';
 import { PhoneConfirmDto } from '../dto/phone-confirm.dto';
 import { UserService } from '../services/user.service';
-import { SuccessInterceptor } from '../../common/interceptors/success.interceptor';
 import phoneConfig from '../config/phone';
-import stringsExceptions from '../strings/exceptions';
+import exceptionsPhone from '../strings/exceptions-phone';
+import responsesPhone from '../strings/responses-phone';
 import { RegisterPhone } from '../entities/register-phone.entity';
 import { User } from '../entities/user.entity';
 import { Authorization } from '../entities/authorization.entity';
+import { ApiResDefaultDto } from 'src/common/dto/api-res-default.dto';
+import { PhoneSendCodeDto } from '../dto/phone-send-code.dto';
+import { PhoneConfirmCodeDto } from '../dto/phone-confirm-code.dto';
 
 @Controller('api/user')
 export class PhoneController {
   constructor(private readonly userService: UserService) {}
 
   @Post('login/phone')
-  @UseInterceptors(SuccessInterceptor)
-  async loginPhone(@Body() payload: PhoneLoginDto): Promise<void> {
+  async loginPhone(
+    @Body() payload: PhoneLoginDto,
+    @Req() req: Request,
+  ): Promise<ApiResDefaultDto<PhoneSendCodeDto>> {
+    const lastSend = await getConnection()
+      .createQueryBuilder(RegisterPhone, 'rp')
+      .where('ip = :ip', { ip: req.ip })
+      .orderBy('rp.createdAt', 'DESC')
+      .getOne();
+
+    const toDate = new Date(lastSend.createdAt);
+    toDate.setSeconds(toDate.getSeconds() + phoneConfig.reSendCode);
+
+    if (lastSend && toDate > new Date()) {
+      return {
+        success: false,
+        message: responsesPhone.sendCodeRecently,
+        data: {
+          repeat: toDate,
+        },
+      };
+    }
+
     const user = await getConnection()
       .createQueryBuilder(User, 'user')
       .where('phone = :phone', { phone: payload.phone })
@@ -49,7 +72,7 @@ export class PhoneController {
     }
 
     if (!code) {
-      throw new RequestTimeoutException(stringsExceptions.failGenVerCode);
+      throw new RequestTimeoutException(exceptionsPhone.failGenVerCode);
     }
 
     await getConnection().transaction(async (transactionalEntityManager) => {
@@ -64,19 +87,32 @@ export class PhoneController {
           phone: payload.phone,
           code: code,
           userId: user?.id,
+          ip: req.ip,
+          userAgent: req.header('user-agent'),
           activeTo: activeTo,
         })
         .execute();
 
       // TODO: Посылаем SMS
     });
+
+    const repeat = new Date();
+    repeat.setSeconds(repeat.getSeconds() + phoneConfig.reSendCode);
+
+    return {
+      success: true,
+      message: responsesPhone.sendCodeSuccess,
+      data: {
+        repeat: repeat,
+      },
+    };
   }
 
   @Post('confirm/phone')
   async confirmPhone(
     @Body() payload: PhoneConfirmDto,
     @Req() req: Request,
-  ): Promise<Authorization> {
+  ): Promise<ApiResDefaultDto<PhoneConfirmCodeDto>> {
     const activeTo = new Date().toISOString();
 
     const registerPhone = await getConnection()
@@ -87,7 +123,7 @@ export class PhoneController {
       .getOne();
 
     if (!registerPhone) {
-      throw new NotFoundException(stringsExceptions.incOutCode);
+      throw new NotFoundException(exceptionsPhone.incOutCode);
     }
 
     let user = registerPhone.user;
@@ -127,7 +163,7 @@ export class PhoneController {
       }
 
       if (!token) {
-        throw new RequestTimeoutException(stringsExceptions.failGenAuthToken);
+        throw new RequestTimeoutException(exceptionsPhone.failGenAuthToken);
       }
 
       const activeTo = new Date();
@@ -161,10 +197,14 @@ export class PhoneController {
         .getOne();
 
       if (!authorization) {
-        throw new PreconditionFailedException(stringsExceptions.authFailed);
+        throw new PreconditionFailedException(exceptionsPhone.authFailed);
       }
     });
 
-    return authorization;
+    return {
+      success: true,
+      message: responsesPhone.confirmCodeSuccess,
+      data: { authorization },
+    };
   }
 }
