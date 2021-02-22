@@ -18,7 +18,7 @@ import responsesPhone from '../strings/responses-phone';
 import { RegisterPhone } from '../entities/register-phone.entity';
 import { User } from '../entities/user.entity';
 import { Authorization } from '../entities/authorization.entity';
-import { ApiResDefaultDto } from 'src/common/dto/api-res-default.dto';
+import { ApiResDefaultDto } from '../../../common/dto/api-res-default.dto';
 import { PhoneSendCodeDto } from '../dto/phone-send-code.dto';
 import { PhoneConfirmCodeDto } from '../dto/phone-confirm-code.dto';
 

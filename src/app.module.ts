@@ -4,13 +4,13 @@ import { AdminModule } from '@admin-bro/nestjs';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import * as Joi from 'joi';
 import { AppController } from './app.controller';
-import { UserModule } from './user/user.module';
-import { User } from './user/entities/user.entity';
+import { UserModule } from './modules/user/user.module';
+import { User } from './modules/user/entities/user.entity';
 import AdminBro from 'admin-bro';
 import { Database, Resource } from '@admin-bro/typeorm';
-import { Authorization } from './user/entities/authorization.entity';
-import { RegisterPhone } from './user/entities/register-phone.entity';
-import { RegisterEmail } from './user/entities/register-email.entity';
+import { Authorization } from './modules/user/entities/authorization.entity';
+import { RegisterPhone } from './modules/user/entities/register-phone.entity';
+import { RegisterEmail } from './modules/user/entities/register-email.entity';
 
 AdminBro.registerAdapter({ Database, Resource });
 
