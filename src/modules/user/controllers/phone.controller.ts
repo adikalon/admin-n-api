@@ -121,6 +121,10 @@ export class PhoneController {
       .createQueryBuilder(RegisterPhone, 'rp')
       .where('rp.code = :code', { code: payload.code })
       .andWhere('rp.activeTo > :activeTo', { activeTo })
+      .andWhere('rp.ip = :ip', { ip: req.ip })
+      .andWhere('rp.userAgent = :userAgent', {
+        userAgent: req.header('user-agent'),
+      })
       .leftJoinAndSelect('rp.user', 'user')
       .getOne();
 
