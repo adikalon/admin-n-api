@@ -10,6 +10,7 @@ import { RegisterEmailRepository } from './repositories/register-email.repositor
 import { RegisterPhoneRepository } from './repositories/register-phone.repository';
 import { UserRepository } from './repositories/user.repository';
 import { UserService } from './services/user.service';
+import { BearerStrategy } from './strategies/bearer.strategy';
 
 @Module({
   imports: [
@@ -25,7 +26,7 @@ import { UserService } from './services/user.service';
     ]),
   ],
   controllers: [PhoneController],
-  providers: [UserService],
+  providers: [UserService, BearerStrategy],
   exports: [TypeOrmModule],
 })
 export class UserModule {}

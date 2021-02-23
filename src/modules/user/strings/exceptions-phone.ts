@@ -3,4 +3,5 @@ export default {
   failGenAuthToken: 'Failed to generate authentication token',
   incOutCode: 'Incorrect or outdated code',
   authFailed: 'Authorization failed',
+  unauthorized: 'Unauthorized',
 };

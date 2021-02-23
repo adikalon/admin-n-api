@@ -6,6 +6,7 @@ import {
   PreconditionFailedException,
   Req,
   RequestTimeoutException,
+  UseGuards,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { getConnection } from 'typeorm';
@@ -21,6 +22,7 @@ import { Authorization } from '../entities/authorization.entity';
 import { ApiResDefaultDto } from '../../../common/dto/api-res-default.dto';
 import { PhoneSendCodeDto } from '../dto/phone-send-code.dto';
 import { PhoneConfirmCodeDto } from '../dto/phone-confirm-code.dto';
+import { BearerGuard } from '../guards/bearer.guard';
 
 @Controller('api/user')
 export class PhoneController {
@@ -206,5 +208,11 @@ export class PhoneController {
       message: responsesPhone.confirmCodeSuccess,
       data: { authorization },
     };
+  }
+
+  @Post('change/phone')
+  @UseGuards(BearerGuard)
+  async changePhone(@Req() req: Request): Promise<any> {
+    return req.user;
   }
 }
