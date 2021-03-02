@@ -1,7 +1,9 @@
 export default {
-  failGenVerCode: 'Failed to generate verification code',
-  failGenAuthToken: 'Failed to generate authentication token',
-  incOutCode: 'Incorrect or outdated code',
-  authFailed: 'Authorization failed',
-  unauthorized: 'Unauthorized',
+  failGenVerCodeLogin: 'Failed to generate verification code',
+  failGenVerCodeChange: 'Failed to generate verification code',
+  failGenAuthTokenLogin: 'Failed to generate authentication token',
+  incOutCodeLogin: 'Incorrect or outdated code',
+  incOutCodeChange: 'Incorrect or outdated code',
+  authFailedLogin: 'Authorization failed',
+  numberIsUsedChange: 'Phone number is used',
 };

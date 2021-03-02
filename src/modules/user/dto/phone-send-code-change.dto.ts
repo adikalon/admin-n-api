@@ -1,6 +1,6 @@
 import { IsDate } from 'class-validator';
 
-export class PhoneSendCodeDto {
+export class PhoneSendCodeChangeDto {
   @IsDate()
   readonly repeat: Date;
 }

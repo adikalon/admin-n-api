@@ -1,5 +1,6 @@
 import {
   Body,
+  ConflictException,
   Controller,
   NotFoundException,
   Post,
@@ -10,8 +11,8 @@ import {
 } from '@nestjs/common';
 import { Request } from 'express';
 import { getConnection } from 'typeorm';
-import { PhoneLoginDto } from '../dto/phone-login.dto';
-import { PhoneConfirmDto } from '../dto/phone-confirm.dto';
+import { PhonePayloadLoginDto } from '../dto/phone-payload-login.dto';
+import { PhonePayloadConfirmLoginDto } from '../dto/phone-payload-confirm-login.dto';
 import { UserService } from '../services/user.service';
 import phoneConfig from '../config/phone';
 import exceptionsPhone from '../strings/exceptions-phone';
@@ -20,36 +21,44 @@ import { RegisterPhone } from '../entities/register-phone.entity';
 import { User } from '../entities/user.entity';
 import { Authorization } from '../entities/authorization.entity';
 import { ApiResDefaultDto } from '../../../common/dto/api-res-default.dto';
-import { PhoneSendCodeDto } from '../dto/phone-send-code.dto';
-import { PhoneConfirmCodeDto } from '../dto/phone-confirm-code.dto';
+import { PhoneSendCodeLoginDto } from '../dto/phone-send-code-login.dto';
+import { PhoneConfirmCodeLoginDto } from '../dto/phone-confirm-code-login.dto';
+import { PhoneConfirmCodeChangeDto } from '../dto/phone-confirm-code-change.dto';
 import { BearerGuard } from '../guards/bearer.guard';
+import { PhonePayloadChangeDto } from '../dto/phone-payload-change.dto';
+import { PhoneSendCodeChangeDto } from '../dto/phone-send-code-change.dto';
+import { ChangePhone } from '../entities/change-phone.entity';
+import { RequestAuth } from '../interfaces/request-auth';
+import { PhonePayloadConfirmChangeDto } from '../dto/phone-payload-confirm-change.dto';
 
 @Controller('api/user')
 export class PhoneController {
   constructor(private readonly userService: UserService) {}
 
-  @Post('login/phone')
-  async loginPhone(
-    @Body() payload: PhoneLoginDto,
+  @Post('login/code/phone')
+  async loginCodePhone(
+    @Body() payload: PhonePayloadLoginDto,
     @Req() req: Request,
-  ): Promise<ApiResDefaultDto<PhoneSendCodeDto>> {
+  ): Promise<ApiResDefaultDto<PhoneSendCodeLoginDto>> {
     const lastSend = await getConnection()
       .createQueryBuilder(RegisterPhone, 'rp')
       .where('ip = :ip', { ip: req.ip })
       .orderBy('rp.createdAt', 'DESC')
       .getOne();
 
-    const toDate = new Date(lastSend.createdAt);
-    toDate.setSeconds(toDate.getSeconds() + phoneConfig.reSendCode);
+    if (lastSend) {
+      const toDate = new Date(lastSend.createdAt);
+      toDate.setSeconds(toDate.getSeconds() + phoneConfig.reSendCodeLogin);
 
-    if (lastSend && toDate > new Date()) {
-      return {
-        success: false,
-        message: responsesPhone.sendCodeRecently,
-        data: {
-          repeat: toDate,
-        },
-      };
+      if (toDate > new Date()) {
+        return {
+          success: false,
+          message: responsesPhone.sendCodeRecentlyLogin,
+          data: {
+            repeat: toDate,
+          },
+        };
+      }
     }
 
     const user = await getConnection()
@@ -59,8 +68,10 @@ export class PhoneController {
 
     let code: string;
 
-    for (let i = 1; i <= phoneConfig.generateCodeAttempt; i++) {
-      const tCode = await this.userService.phoneAuthGenerateCode();
+    for (let i = 1; i <= phoneConfig.generateCodeAttemptLogin; i++) {
+      const min = phoneConfig.confirmCodeLengthLoginMin;
+      const max = phoneConfig.confirmCodeLengthLoginMax;
+      const tCode = await this.userService.generatePhoneCode(min, max);
 
       const rp = await getConnection()
         .createQueryBuilder(RegisterPhone, 'rp')
@@ -74,12 +85,14 @@ export class PhoneController {
     }
 
     if (!code) {
-      throw new RequestTimeoutException(exceptionsPhone.failGenVerCode);
+      throw new RequestTimeoutException(exceptionsPhone.failGenVerCodeLogin);
     }
 
     await getConnection().transaction(async (transactionalEntityManager) => {
       const activeTo = new Date();
-      activeTo.setSeconds(activeTo.getSeconds() + phoneConfig.activeToCode);
+      activeTo.setSeconds(
+        activeTo.getSeconds() + phoneConfig.activeToCodeLogin,
+      );
 
       await transactionalEntityManager
         .createQueryBuilder()
@@ -99,22 +112,22 @@ export class PhoneController {
     });
 
     const repeat = new Date();
-    repeat.setSeconds(repeat.getSeconds() + phoneConfig.reSendCode);
+    repeat.setSeconds(repeat.getSeconds() + phoneConfig.reSendCodeLogin);
 
     return {
       success: true,
-      message: responsesPhone.sendCodeSuccess,
+      message: responsesPhone.sendCodeSuccessLogin,
       data: {
         repeat: repeat,
       },
     };
   }
 
-  @Post('confirm/phone')
-  async confirmPhone(
-    @Body() payload: PhoneConfirmDto,
+  @Post('login/confirm/phone')
+  async loginConfirmPhone(
+    @Body() payload: PhonePayloadConfirmLoginDto,
     @Req() req: Request,
-  ): Promise<ApiResDefaultDto<PhoneConfirmCodeDto>> {
+  ): Promise<ApiResDefaultDto<PhoneConfirmCodeLoginDto>> {
     const activeTo = new Date().toISOString();
 
     const registerPhone = await getConnection()
@@ -129,7 +142,7 @@ export class PhoneController {
       .getOne();
 
     if (!registerPhone) {
-      throw new NotFoundException(exceptionsPhone.incOutCode);
+      throw new NotFoundException(exceptionsPhone.incOutCodeLogin);
     }
 
     let user = registerPhone.user;
@@ -154,8 +167,8 @@ export class PhoneController {
 
       let token: string;
 
-      for (let i = 1; i <= phoneConfig.generateTokenAttempt; i++) {
-        const tToken = await this.userService.phoneAuthGenerateToken();
+      for (let i = 1; i <= phoneConfig.generateTokenAttemptLogin; i++) {
+        const tToken = await this.userService.generateAuthToken();
 
         const authorization = await getConnection()
           .createQueryBuilder(Authorization, 'authorization')
@@ -169,11 +182,15 @@ export class PhoneController {
       }
 
       if (!token) {
-        throw new RequestTimeoutException(exceptionsPhone.failGenAuthToken);
+        throw new RequestTimeoutException(
+          exceptionsPhone.failGenAuthTokenLogin,
+        );
       }
 
       const activeTo = new Date();
-      activeTo.setSeconds(activeTo.getSeconds() + phoneConfig.activeToToken);
+      activeTo.setSeconds(
+        activeTo.getSeconds() + phoneConfig.activeToTokenLogin,
+      );
 
       const { identifiers } = await transactionalEntityManager
         .createQueryBuilder()
@@ -203,20 +220,157 @@ export class PhoneController {
         .getOne();
 
       if (!authorization) {
-        throw new PreconditionFailedException(exceptionsPhone.authFailed);
+        throw new PreconditionFailedException(exceptionsPhone.authFailedLogin);
       }
     });
 
     return {
       success: true,
-      message: responsesPhone.confirmCodeSuccess,
+      message: responsesPhone.confirmCodeSuccessLogin,
       data: { authorization },
     };
   }
 
-  @Post('change/phone')
+  @Post('change/code/phone')
   @UseGuards(BearerGuard)
-  async changePhone(@Req() req: Request): Promise<any> {
-    return req.user;
+  async changeCodePhone(
+    @Body() payload: PhonePayloadChangeDto,
+    @Req() req: RequestAuth,
+  ): Promise<ApiResDefaultDto<PhoneSendCodeChangeDto>> {
+    const lastSend = await getConnection()
+      .createQueryBuilder(ChangePhone, 'cp')
+      .where('ip = :ip', { ip: req.ip })
+      .orderBy('cp.createdAt', 'DESC')
+      .getOne();
+
+    if (lastSend) {
+      const toDate = new Date(lastSend.createdAt);
+      toDate.setSeconds(toDate.getSeconds() + phoneConfig.reSendCodeChange);
+
+      if (toDate > new Date()) {
+        return {
+          success: false,
+          message: responsesPhone.sendCodeRecentlyChange,
+          data: {
+            repeat: toDate,
+          },
+        };
+      }
+    }
+
+    const checkUser = await getConnection()
+      .createQueryBuilder(User, 'user')
+      .where('phone = :phone', { phone: payload.phone })
+      .getOne();
+
+    if (checkUser) {
+      throw new ConflictException(exceptionsPhone.numberIsUsedChange);
+    }
+
+    let code: string;
+
+    for (let i = 1; i <= phoneConfig.generateCodeAttemptChange; i++) {
+      const min = phoneConfig.confirmCodeLengthChangeMin;
+      const max = phoneConfig.confirmCodeLengthChangeMax;
+      const tCode = await this.userService.generatePhoneCode(min, max);
+
+      const cp = await getConnection()
+        .createQueryBuilder(ChangePhone, 'cp')
+        .where('cp.code = :code', { code: tCode })
+        .getOne();
+
+      if (!cp) {
+        code = tCode;
+        break;
+      }
+    }
+
+    if (!code) {
+      throw new RequestTimeoutException(exceptionsPhone.failGenVerCodeChange);
+    }
+
+    await getConnection().transaction(async (transactionalEntityManager) => {
+      const activeTo = new Date();
+      activeTo.setSeconds(
+        activeTo.getSeconds() + phoneConfig.activeToCodeChange,
+      );
+
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .insert()
+        .into(ChangePhone)
+        .values({
+          phone: payload.phone,
+          code: code,
+          userId: req.user.id,
+          ip: req.ip,
+          userAgent: req.header('user-agent'),
+          activeTo: activeTo,
+        })
+        .execute();
+
+      // TODO: Посылаем SMS
+    });
+
+    const repeat = new Date();
+    repeat.setSeconds(repeat.getSeconds() + phoneConfig.reSendCodeChange);
+
+    return {
+      success: true,
+      message: responsesPhone.sendCodeSuccessChange,
+      data: {
+        repeat: repeat,
+      },
+    };
+  }
+
+  @Post('change/confirm/phone')
+  @UseGuards(BearerGuard)
+  async changeConfirmPhone(
+    @Body() payload: PhonePayloadConfirmChangeDto,
+    @Req() req: RequestAuth,
+  ): Promise<ApiResDefaultDto<PhoneConfirmCodeChangeDto>> {
+    const activeTo = new Date().toISOString();
+
+    const changePhone = await getConnection()
+      .createQueryBuilder(ChangePhone, 'cp')
+      .where('cp.code = :code', { code: payload.code })
+      .andWhere('cp.activeTo > :activeTo', { activeTo })
+      .andWhere('cp.ip = :ip', { ip: req.ip })
+      .andWhere('cp.userId = :userId', { userId: req.user.id })
+      .andWhere('cp.userAgent = :userAgent', {
+        userAgent: req.header('user-agent'),
+      })
+      .leftJoinAndSelect('cp.user', 'user')
+      .getOne();
+
+    if (!changePhone) {
+      throw new NotFoundException(exceptionsPhone.incOutCodeChange);
+    }
+
+    const user = changePhone.user;
+    user.phone = changePhone.phone;
+
+    await getConnection().transaction(async (transactionalEntityManager) => {
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .update(User)
+        .set({ phone: changePhone.phone })
+        .where('id = :id', { id: changePhone.userId })
+        .execute();
+
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .delete()
+        .from(ChangePhone)
+        .where({ id: changePhone.id })
+        .execute();
+    });
+
+    return {
+      success: true,
+      message: responsesPhone.confirmCodeSuccessLogin,
+      data: { user },
+    };
   }
 }

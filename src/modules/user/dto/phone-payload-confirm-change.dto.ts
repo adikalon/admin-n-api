@@ -1,6 +1,6 @@
 import { IsString } from 'class-validator';
 
-export class PhoneConfirmDto {
+export class PhonePayloadConfirmChangeDto {
   @IsString()
   readonly code: string;
 }

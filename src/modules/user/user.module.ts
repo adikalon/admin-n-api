@@ -11,6 +11,10 @@ import { RegisterPhoneRepository } from './repositories/register-phone.repositor
 import { UserRepository } from './repositories/user.repository';
 import { UserService } from './services/user.service';
 import { BearerStrategy } from './strategies/bearer.strategy';
+import { ChangePhone } from './entities/change-phone.entity';
+import { ChangePhoneRepository } from './repositories/change-phone.repository';
+import { ChangeEmail } from './entities/change-email.entity';
+import { ChangeEmailRepository } from './repositories/change-email.repository';
 
 @Module({
   imports: [
@@ -23,6 +27,10 @@ import { BearerStrategy } from './strategies/bearer.strategy';
       RegisterPhoneRepository,
       RegisterEmail,
       RegisterEmailRepository,
+      ChangePhone,
+      ChangePhoneRepository,
+      ChangeEmail,
+      ChangeEmailRepository,
     ]),
   ],
   controllers: [PhoneController],
