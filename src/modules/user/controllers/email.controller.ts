@@ -11,50 +11,50 @@ import {
 } from '@nestjs/common';
 import { Request } from 'express';
 import { getConnection } from 'typeorm';
-import { PhonePayloadLoginDto } from '../dto/phone-payload-login.dto';
-import { PhonePayloadConfirmLoginDto } from '../dto/phone-payload-confirm-login.dto';
 import { UserService } from '../services/user.service';
-import configPhone from '../config/phone';
-import exceptionsPhone from '../strings/exceptions-phone';
-import responsesPhone from '../strings/responses-phone';
-import { RegisterPhone } from '../entities/register-phone.entity';
+import configEmail from '../config/email';
+import exceptionsEmail from '../strings/exceptions-email';
+import responsesEmail from '../strings/responses-email';
 import { User } from '../entities/user.entity';
 import { Authorization } from '../entities/authorization.entity';
 import { ApiResDefaultDto } from '../../../common/dto/api-res-default.dto';
-import { PhoneSendCodeLoginDto } from '../dto/phone-send-code-login.dto';
-import { PhoneConfirmCodeLoginDto } from '../dto/phone-confirm-code-login.dto';
-import { PhoneConfirmCodeChangeDto } from '../dto/phone-confirm-code-change.dto';
 import { BearerGuard } from '../guards/bearer.guard';
-import { PhonePayloadChangeDto } from '../dto/phone-payload-change.dto';
-import { PhoneSendCodeChangeDto } from '../dto/phone-send-code-change.dto';
-import { ChangePhone } from '../entities/change-phone.entity';
 import { RequestAuth } from '../interfaces/request-auth';
-import { PhonePayloadConfirmChangeDto } from '../dto/phone-payload-confirm-change.dto';
+import { EmailPayloadLoginDto } from '../dto/email-payload-login.dto';
+import { EmailSendCodeLoginDto } from '../dto/email-send-code-login.dto';
+import { RegisterEmail } from '../entities/register-email.entity';
+import { EmailPayloadConfirmLoginDto } from '../dto/email-payload-confirm-login.dto';
+import { EmailConfirmCodeLoginDto } from '../dto/email-confirm-code-login.dto';
 import configUser from '../config/user';
+import { EmailPayloadChangeDto } from '../dto/email-payload-change.dto';
+import { EmailSendCodeChangeDto } from '../dto/email-send-code-change.dto';
+import { ChangeEmail } from '../entities/change-email.entity';
+import { EmailConfirmCodeChangeDto } from '../dto/email-confirm-code-change.dto';
+import { EmailPayloadConfirmChangeDto } from '../dto/email-payload-confirm-change.dto';
 
 @Controller('api/user')
-export class PhoneController {
+export class EmailController {
   constructor(private readonly userService: UserService) {}
 
-  @Post('login/code/phone')
-  async loginCodePhone(
-    @Body() payload: PhonePayloadLoginDto,
+  @Post('login/code/email')
+  async loginCodeEmail(
+    @Body() payload: EmailPayloadLoginDto,
     @Req() req: Request,
-  ): Promise<ApiResDefaultDto<PhoneSendCodeLoginDto>> {
+  ): Promise<ApiResDefaultDto<EmailSendCodeLoginDto>> {
     const lastSend = await getConnection()
-      .createQueryBuilder(RegisterPhone, 'rp')
-      .where('rp.ip = :ip', { ip: req.ip })
-      .orderBy('rp.createdAt', 'DESC')
+      .createQueryBuilder(RegisterEmail, 're')
+      .where('re.ip = :ip', { ip: req.ip })
+      .orderBy('re.createdAt', 'DESC')
       .getOne();
 
     if (lastSend) {
       const toDate = new Date(lastSend.createdAt);
-      toDate.setSeconds(toDate.getSeconds() + configPhone.reSendCodeLogin);
+      toDate.setSeconds(toDate.getSeconds() + configEmail.reSendCodeLogin);
 
       if (toDate > new Date()) {
         return {
           success: false,
-          message: responsesPhone.sendCodeRecentlyLogin,
+          message: responsesEmail.sendCodeRecentlyLogin,
           data: {
             repeat: toDate,
           },
@@ -64,43 +64,42 @@ export class PhoneController {
 
     const user = await getConnection()
       .createQueryBuilder(User, 'user')
-      .where('phone = :phone', { phone: payload.phone })
+      .where('email = :email', { email: payload.email })
       .getOne();
 
     let code: string;
 
-    for (let i = 1; i <= configPhone.generateCodeAttemptLogin; i++) {
-      const min = configPhone.confirmCodeLengthLoginMin;
-      const max = configPhone.confirmCodeLengthLoginMax;
-      const tCode = await this.userService.generateCodePhone(min, max);
+    for (let i = 1; i <= configEmail.generateCodeAttemptLogin; i++) {
+      const length = configEmail.confirmCodeLengthLogin;
+      const tCode = await this.userService.generateCodeEmail(length);
 
-      const rp = await getConnection()
-        .createQueryBuilder(RegisterPhone, 'rp')
-        .where('rp.code = :code', { code: tCode })
+      const re = await getConnection()
+        .createQueryBuilder(RegisterEmail, 're')
+        .where('re.code = :code', { code: tCode })
         .getOne();
 
-      if (!rp) {
+      if (!re) {
         code = tCode;
         break;
       }
     }
 
     if (!code) {
-      throw new RequestTimeoutException(exceptionsPhone.failGenVerCodeLogin);
+      throw new RequestTimeoutException(exceptionsEmail.failGenVerCodeLogin);
     }
 
     await getConnection().transaction(async (transactionalEntityManager) => {
       const activeTo = new Date();
       activeTo.setSeconds(
-        activeTo.getSeconds() + configPhone.activeToCodeLogin,
+        activeTo.getSeconds() + configEmail.activeToCodeLogin,
       );
 
       await transactionalEntityManager
         .createQueryBuilder()
         .insert()
-        .into(RegisterPhone)
+        .into(RegisterEmail)
         .values({
-          phone: payload.phone,
+          email: payload.email,
           code: code,
           userId: user?.id,
           ip: req.ip,
@@ -109,44 +108,44 @@ export class PhoneController {
         })
         .execute();
 
-      // TODO: Посылаем SMS
+      // TODO: Посылаем EMAIL
     });
 
     const repeat = new Date();
-    repeat.setSeconds(repeat.getSeconds() + configPhone.reSendCodeLogin);
+    repeat.setSeconds(repeat.getSeconds() + configEmail.reSendCodeLogin);
 
     return {
       success: true,
-      message: responsesPhone.sendCodeSuccessLogin,
+      message: responsesEmail.sendCodeSuccessLogin,
       data: {
         repeat: repeat,
       },
     };
   }
 
-  @Post('login/confirm/phone')
-  async loginConfirmPhone(
-    @Body() payload: PhonePayloadConfirmLoginDto,
+  @Post('login/confirm/email')
+  async loginConfirmEmail(
+    @Body() payload: EmailPayloadConfirmLoginDto,
     @Req() req: Request,
-  ): Promise<ApiResDefaultDto<PhoneConfirmCodeLoginDto>> {
+  ): Promise<ApiResDefaultDto<EmailConfirmCodeLoginDto>> {
     const activeTo = new Date().toISOString();
 
-    const registerPhone = await getConnection()
-      .createQueryBuilder(RegisterPhone, 'rp')
-      .where('rp.code = :code', { code: payload.code })
-      .andWhere('rp.activeTo > :activeTo', { activeTo })
-      .andWhere('rp.ip = :ip', { ip: req.ip })
-      .andWhere('rp.userAgent = :userAgent', {
+    const registerEmail = await getConnection()
+      .createQueryBuilder(RegisterEmail, 're')
+      .where('re.code = :code', { code: payload.code })
+      .andWhere('re.activeTo > :activeTo', { activeTo })
+      .andWhere('re.ip = :ip', { ip: req.ip })
+      .andWhere('re.userAgent = :userAgent', {
         userAgent: req.header('user-agent'),
       })
-      .leftJoinAndSelect('rp.user', 'user')
+      .leftJoinAndSelect('re.user', 'user')
       .getOne();
 
-    if (!registerPhone) {
-      throw new NotFoundException(exceptionsPhone.incOutCodeLogin);
+    if (!registerEmail) {
+      throw new NotFoundException(exceptionsEmail.incOutCodeLogin);
     }
 
-    let user = registerPhone.user;
+    let user = registerEmail.user;
     let authorization: Authorization;
 
     await getConnection().transaction(async (transactionalEntityManager) => {
@@ -157,7 +156,7 @@ export class PhoneController {
           .createQueryBuilder()
           .insert()
           .into(User)
-          .values({ phone: registerPhone.phone })
+          .values({ email: registerEmail.email })
           .execute();
 
         user = await transactionalEntityManager
@@ -168,7 +167,7 @@ export class PhoneController {
 
       let token: string;
 
-      for (let i = 1; i <= configPhone.generateTokenAttemptLogin; i++) {
+      for (let i = 1; i <= configEmail.generateTokenAttemptLogin; i++) {
         const tToken = await this.userService.generateAuthToken(
           configUser.authTokenLength,
         );
@@ -186,7 +185,7 @@ export class PhoneController {
 
       if (!token) {
         throw new RequestTimeoutException(
-          exceptionsPhone.failGenAuthTokenLogin,
+          exceptionsEmail.failGenAuthTokenLogin,
         );
       }
 
@@ -209,8 +208,8 @@ export class PhoneController {
       await transactionalEntityManager
         .createQueryBuilder()
         .delete()
-        .from(RegisterPhone)
-        .where({ id: registerPhone.id })
+        .from(RegisterEmail)
+        .where({ id: registerEmail.id })
         .execute();
 
       authorization = await transactionalEntityManager
@@ -221,37 +220,37 @@ export class PhoneController {
         .getOne();
 
       if (!authorization) {
-        throw new PreconditionFailedException(exceptionsPhone.authFailedLogin);
+        throw new PreconditionFailedException(exceptionsEmail.authFailedLogin);
       }
     });
 
     return {
       success: true,
-      message: responsesPhone.confirmCodeSuccessLogin,
+      message: responsesEmail.confirmCodeSuccessLogin,
       data: { authorization },
     };
   }
 
-  @Post('change/code/phone')
+  @Post('change/code/email')
   @UseGuards(BearerGuard)
-  async changeCodePhone(
-    @Body() payload: PhonePayloadChangeDto,
+  async changeCodeEmail(
+    @Body() payload: EmailPayloadChangeDto,
     @Req() req: RequestAuth,
-  ): Promise<ApiResDefaultDto<PhoneSendCodeChangeDto>> {
+  ): Promise<ApiResDefaultDto<EmailSendCodeChangeDto>> {
     const lastSend = await getConnection()
-      .createQueryBuilder(ChangePhone, 'cp')
-      .where('cp.ip = :ip', { ip: req.ip })
-      .orderBy('cp.createdAt', 'DESC')
+      .createQueryBuilder(ChangeEmail, 'ce')
+      .where('ce.ip = :ip', { ip: req.ip })
+      .orderBy('ce.createdAt', 'DESC')
       .getOne();
 
     if (lastSend) {
       const toDate = new Date(lastSend.createdAt);
-      toDate.setSeconds(toDate.getSeconds() + configPhone.reSendCodeChange);
+      toDate.setSeconds(toDate.getSeconds() + configEmail.reSendCodeChange);
 
       if (toDate > new Date()) {
         return {
           success: false,
-          message: responsesPhone.sendCodeRecentlyChange,
+          message: responsesEmail.sendCodeRecentlyChange,
           data: {
             repeat: toDate,
           },
@@ -261,47 +260,46 @@ export class PhoneController {
 
     const checkUser = await getConnection()
       .createQueryBuilder(User, 'user')
-      .where('phone = :phone', { phone: payload.phone })
+      .where('email = :email', { email: payload.email })
       .getOne();
 
     if (checkUser) {
-      throw new ConflictException(exceptionsPhone.numberIsUsedChange);
+      throw new ConflictException(exceptionsEmail.emailIsUsedChange);
     }
 
     let code: string;
 
-    for (let i = 1; i <= configPhone.generateCodeAttemptChange; i++) {
-      const min = configPhone.confirmCodeLengthChangeMin;
-      const max = configPhone.confirmCodeLengthChangeMax;
-      const tCode = await this.userService.generateCodePhone(min, max);
+    for (let i = 1; i <= configEmail.generateCodeAttemptChange; i++) {
+      const length = configEmail.confirmCodeLengthChange;
+      const tCode = await this.userService.generateCodeEmail(length);
 
-      const cp = await getConnection()
-        .createQueryBuilder(ChangePhone, 'cp')
-        .where('cp.code = :code', { code: tCode })
+      const ce = await getConnection()
+        .createQueryBuilder(ChangeEmail, 'ce')
+        .where('ce.code = :code', { code: tCode })
         .getOne();
 
-      if (!cp) {
+      if (!ce) {
         code = tCode;
         break;
       }
     }
 
     if (!code) {
-      throw new RequestTimeoutException(exceptionsPhone.failGenVerCodeChange);
+      throw new RequestTimeoutException(exceptionsEmail.failGenVerCodeChange);
     }
 
     await getConnection().transaction(async (transactionalEntityManager) => {
       const activeTo = new Date();
       activeTo.setSeconds(
-        activeTo.getSeconds() + configPhone.activeToCodeChange,
+        activeTo.getSeconds() + configEmail.activeToCodeChange,
       );
 
       await transactionalEntityManager
         .createQueryBuilder()
         .insert()
-        .into(ChangePhone)
+        .into(ChangeEmail)
         .values({
-          phone: payload.phone,
+          email: payload.email,
           code: code,
           userId: req.user.id,
           ip: req.ip,
@@ -310,67 +308,67 @@ export class PhoneController {
         })
         .execute();
 
-      // TODO: Посылаем SMS
+      // TODO: Посылаем EMAIL
     });
 
     const repeat = new Date();
-    repeat.setSeconds(repeat.getSeconds() + configPhone.reSendCodeChange);
+    repeat.setSeconds(repeat.getSeconds() + configEmail.reSendCodeChange);
 
     return {
       success: true,
-      message: responsesPhone.sendCodeSuccessChange,
+      message: responsesEmail.sendCodeSuccessChange,
       data: {
         repeat: repeat,
       },
     };
   }
 
-  @Post('change/confirm/phone')
+  @Post('change/confirm/email')
   @UseGuards(BearerGuard)
-  async changeConfirmPhone(
-    @Body() payload: PhonePayloadConfirmChangeDto,
+  async changeConfirmEmail(
+    @Body() payload: EmailPayloadConfirmChangeDto,
     @Req() req: RequestAuth,
-  ): Promise<ApiResDefaultDto<PhoneConfirmCodeChangeDto>> {
+  ): Promise<ApiResDefaultDto<EmailConfirmCodeChangeDto>> {
     const activeTo = new Date().toISOString();
 
-    const changePhone = await getConnection()
-      .createQueryBuilder(ChangePhone, 'cp')
-      .where('cp.code = :code', { code: payload.code })
-      .andWhere('cp.activeTo > :activeTo', { activeTo })
-      .andWhere('cp.ip = :ip', { ip: req.ip })
-      .andWhere('cp.userId = :userId', { userId: req.user.id })
-      .andWhere('cp.userAgent = :userAgent', {
+    const changeEmail = await getConnection()
+      .createQueryBuilder(ChangeEmail, 'ce')
+      .where('ce.code = :code', { code: payload.code })
+      .andWhere('ce.activeTo > :activeTo', { activeTo })
+      .andWhere('ce.ip = :ip', { ip: req.ip })
+      .andWhere('ce.userId = :userId', { userId: req.user.id })
+      .andWhere('ce.userAgent = :userAgent', {
         userAgent: req.header('user-agent'),
       })
-      .leftJoinAndSelect('cp.user', 'user')
+      .leftJoinAndSelect('ce.user', 'user')
       .getOne();
 
-    if (!changePhone) {
-      throw new NotFoundException(exceptionsPhone.incOutCodeChange);
+    if (!changeEmail) {
+      throw new NotFoundException(exceptionsEmail.incOutCodeChange);
     }
 
-    const user = changePhone.user;
-    user.phone = changePhone.phone;
+    const user = changeEmail.user;
+    user.email = changeEmail.email;
 
     await getConnection().transaction(async (transactionalEntityManager) => {
       await transactionalEntityManager
         .createQueryBuilder()
         .update(User)
-        .set({ phone: changePhone.phone })
-        .where('id = :id', { id: changePhone.userId })
+        .set({ email: changeEmail.email })
+        .where('id = :id', { id: changeEmail.userId })
         .execute();
 
       await transactionalEntityManager
         .createQueryBuilder()
         .delete()
-        .from(ChangePhone)
-        .where({ id: changePhone.id })
+        .from(ChangeEmail)
+        .where({ id: changeEmail.id })
         .execute();
     });
 
     return {
       success: true,
-      message: responsesPhone.confirmCodeSuccessChange,
+      message: responsesEmail.confirmCodeSuccessChange,
       data: { user },
     };
   }

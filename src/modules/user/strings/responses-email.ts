@@ -3,6 +3,6 @@ export default {
   sendCodeSuccessChange: 'Confirmation code sent successfully',
   sendCodeRecentlyLogin: 'Code was sent recently',
   sendCodeRecentlyChange: 'Code was sent recently',
-  confirmCodeSuccessLogin: 'Phone confirmed successfully',
-  confirmCodeSuccessChange: 'Phone confirmed successfully',
+  confirmCodeSuccessLogin: 'Email confirmed successfully',
+  confirmCodeSuccessChange: 'Email confirmed successfully',
 };

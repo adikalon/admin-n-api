@@ -17,7 +17,7 @@ export class ChangeEmail extends BaseEntity {
   email: string;
 
   @Column({ type: 'varchar', unique: true, select: false })
-  token: string;
+  code: string;
 
   @Column({ nullable: true })
   userId: number;

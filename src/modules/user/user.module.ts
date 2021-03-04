@@ -15,6 +15,7 @@ import { ChangePhone } from './entities/change-phone.entity';
 import { ChangePhoneRepository } from './repositories/change-phone.repository';
 import { ChangeEmail } from './entities/change-email.entity';
 import { ChangeEmailRepository } from './repositories/change-email.repository';
+import { EmailController } from './controllers/email.controller';
 
 @Module({
   imports: [
@@ -33,7 +34,7 @@ import { ChangeEmailRepository } from './repositories/change-email.repository';
       ChangeEmailRepository,
     ]),
   ],
-  controllers: [PhoneController],
+  controllers: [PhoneController, EmailController],
   providers: [UserService, BearerStrategy],
   exports: [TypeOrmModule],
 })

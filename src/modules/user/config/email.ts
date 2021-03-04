@@ -1,8 +1,6 @@
 export default {
-  confirmCodeLengthLoginMin: 10000,
-  confirmCodeLengthLoginMax: 99999,
-  confirmCodeLengthChangeMin: 10000,
-  confirmCodeLengthChangeMax: 99999,
+  confirmCodeLengthLogin: 100,
+  confirmCodeLengthChange: 100,
   generateCodeAttemptLogin: 10,
   generateCodeAttemptChange: 10,
   generateTokenAttemptLogin: 10,
