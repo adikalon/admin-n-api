@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AdminModule } from '@admin-bro/nestjs';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import * as Joi from 'joi';
 import { AppController } from './app.controller';
 import { UserModule } from './modules/user/user.module';
 import { User } from './modules/user/entities/user.entity';
@@ -11,6 +10,7 @@ import { Database, Resource } from '@admin-bro/typeorm';
 import { Authorization } from './modules/user/entities/authorization.entity';
 import { RegisterPhone } from './modules/user/entities/register-phone.entity';
 import { RegisterEmail } from './modules/user/entities/register-email.entity';
+import { validate } from './env.validation';
 
 AdminBro.registerAdapter({ Database, Resource });
 
@@ -20,14 +20,7 @@ AdminBro.registerAdapter({ Database, Resource });
      * Config
      */
     ConfigModule.forRoot({
-      validationSchema: Joi.object({
-        NODE_ENV: Joi.string().valid('development', 'production', 'debug'),
-        PG_USER: Joi.string().required(),
-        PG_PASSWORD: Joi.string().required(),
-        PG_BASENAME: Joi.string().required(),
-        CLI_POSTGRES_PORT: Joi.number().required(),
-        CLI_POSTGRES_HOST: Joi.string().required(),
-      }),
+      validate: validate,
       expandVariables: true,
       isGlobal: true,
     }),
