@@ -11,6 +11,7 @@ import { Authorization } from './modules/user/entities/authorization.entity';
 import { RegisterPhone } from './modules/user/entities/register-phone.entity';
 import { RegisterEmail } from './modules/user/entities/register-email.entity';
 import { validate } from './env.validation';
+import { SMSModule } from './modules/sms/sms.module';
 
 AdminBro.registerAdapter({ Database, Resource });
 

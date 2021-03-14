@@ -51,12 +51,12 @@ export class DefaultExceptionFilter extends BaseExceptionFilter {
       title = exception.name;
       stack = exception.stack.replace(/ {4}/g, '  ');
       let res = exception.message;
-      data = res;
 
       if (typeof res === 'object') {
         res = JSON.stringify(res, null, 2);
       }
 
+      data = res;
       error = res;
     } else {
       data = exception;

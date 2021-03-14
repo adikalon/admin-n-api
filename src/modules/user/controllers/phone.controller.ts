@@ -17,6 +17,7 @@ import { UserService } from '../services/user.service';
 import configPhone from '../config/phone';
 import exceptionsPhone from '../strings/exceptions-phone';
 import responsesPhone from '../strings/responses-phone';
+import sendingsSMS from '../strings/sendings-sms';
 import { RegisterPhone } from '../entities/register-phone.entity';
 import { User } from '../entities/user.entity';
 import { Authorization } from '../entities/authorization.entity';
@@ -31,10 +32,14 @@ import { ChangePhone } from '../entities/change-phone.entity';
 import { RequestAuth } from '../interfaces/request-auth';
 import { PhonePayloadConfirmChangeDto } from '../dto/phone-payload-confirm-change.dto';
 import configUser from '../config/user';
+import { SMSService } from '../../sms/services/sms.service';
 
 @Controller('api/user')
 export class PhoneController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly smsService: SMSService,
+  ) {}
 
   @Post('login/code/phone')
   async loginCodePhone(
@@ -109,7 +114,9 @@ export class PhoneController {
         })
         .execute();
 
-      // TODO: Посылаем SMS
+      await this.smsService
+        .getService()
+        .send(payload.phone, sendingsSMS.codeLogin.replace('%c', code));
     });
 
     const repeat = new Date();
@@ -310,7 +317,9 @@ export class PhoneController {
         })
         .execute();
 
-      // TODO: Посылаем SMS
+      await this.smsService
+        .getService()
+        .send(payload.phone, sendingsSMS.codeChange.replace('%c', code));
     });
 
     const repeat = new Date();

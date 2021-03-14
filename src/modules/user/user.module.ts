@@ -16,6 +16,7 @@ import { ChangePhoneRepository } from './repositories/change-phone.repository';
 import { ChangeEmail } from './entities/change-email.entity';
 import { ChangeEmailRepository } from './repositories/change-email.repository';
 import { EmailController } from './controllers/email.controller';
+import { SMSModule } from '../sms/sms.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { EmailController } from './controllers/email.controller';
       ChangeEmail,
       ChangeEmailRepository,
     ]),
+    SMSModule,
   ],
   controllers: [PhoneController, EmailController],
   providers: [UserService, BearerStrategy],
