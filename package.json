@@ -26,7 +26,7 @@
   },
   "dependencies": {
     "@admin-bro/express": "^3.0.1",
-    "@admin-bro/nestjs": "^1.0.0",
+    "@admin-bro/nestjs": "^1.1.0",
     "@admin-bro/typeorm": "^1.4.0",
     "@nestjs/common": "^7.5.1",
     "@nestjs/config": "^0.6.1",

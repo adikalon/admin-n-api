@@ -11,7 +11,8 @@ import { Authorization } from './modules/user/entities/authorization.entity';
 import { RegisterPhone } from './modules/user/entities/register-phone.entity';
 import { RegisterEmail } from './modules/user/entities/register-email.entity';
 import { validate } from './env.validation';
-import { SMSModule } from './modules/sms/sms.module';
+import { ChangePhone } from './modules/user/entities/change-phone.entity';
+import { ChangeEmail } from './modules/user/entities/change-email.entity';
 
 AdminBro.registerAdapter({ Database, Resource });
 
@@ -47,12 +48,19 @@ AdminBro.registerAdapter({ Database, Resource });
     /**
      * AdminBro
      */
-    // AdminModule.createAdmin({
-    //   adminBroOptions: {
-    //     rootPath: '/admin',
-    //     resources: [User, Authorization, RegisterPhone, RegisterEmail],
-    //   },
-    // }),
+    AdminModule.createAdmin({
+      adminBroOptions: {
+        rootPath: '/admin',
+        resources: [
+          User,
+          Authorization,
+          RegisterPhone,
+          RegisterEmail,
+          ChangePhone,
+          ChangeEmail,
+        ],
+      },
+    }),
 
     /**
      * Custom modules
