@@ -31,10 +31,15 @@ import { EmailSendCodeChangeDto } from '../dto/email-send-code-change.dto';
 import { ChangeEmail } from '../entities/change-email.entity';
 import { EmailConfirmCodeChangeDto } from '../dto/email-confirm-code-change.dto';
 import { EmailPayloadConfirmChangeDto } from '../dto/email-payload-confirm-change.dto';
+import { EmailService } from '../../email/services/email.service';
+import { Book } from '../../email/services/sendpulse.service';
 
 @Controller('api/user')
 export class EmailController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly emailService: EmailService,
+  ) {}
 
   @Post('login/code/email')
   async loginCodeEmail(
@@ -108,7 +113,9 @@ export class EmailController {
         })
         .execute();
 
-      // TODO: Посылаем EMAIL
+      await this.emailService
+        .getService()
+        .send(payload.email, { book: Book.login, variables: { code } });
     });
 
     const repeat = new Date();
@@ -308,7 +315,9 @@ export class EmailController {
         })
         .execute();
 
-      // TODO: Посылаем EMAIL
+      await this.emailService
+        .getService()
+        .send(payload.email, { book: Book.change, variables: { code } });
     });
 
     const repeat = new Date();
