@@ -1,18 +1,21 @@
 import {
   Entity,
-  PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
   DeleteDateColumn,
   Column,
   BaseEntity,
   ManyToOne,
+  Generated,
+  PrimaryColumn,
 } from 'typeorm';
 import { User } from './user.entity';
+import { bigint } from '../../../common/functions/entity';
 
 @Entity()
 export class Authorization extends BaseEntity {
-  @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
+  @Generated('increment')
+  @PrimaryColumn('bigint', { unsigned: true, transformer: [bigint] })
   id: number;
 
   @Column({ nullable: true })

@@ -1,20 +1,23 @@
 import {
   Entity,
-  PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
   DeleteDateColumn,
   Column,
   BaseEntity,
   OneToMany,
+  Generated,
+  PrimaryColumn,
 } from 'typeorm';
 import { RegisterPhone } from './register-phone.entity';
 import { RegisterEmail } from './register-email.entity';
 import { Authorization } from './authorization.entity';
+import { bigint } from '../../../common/functions/entity';
 
 @Entity()
 export class User extends BaseEntity {
-  @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
+  @Generated('increment')
+  @PrimaryColumn('bigint', { unsigned: true, transformer: [bigint] })
   id: number;
 
   @Column({ type: 'bigint', unsigned: true, nullable: true, unique: true })
@@ -22,12 +25,6 @@ export class User extends BaseEntity {
 
   @Column({ type: 'varchar', nullable: true, unique: true })
   email: string;
-
-  @Column({ type: 'varchar', nullable: true, unique: true })
-  login: string;
-
-  @Column({ type: 'varchar', nullable: true, select: false })
-  password: string;
 
   @CreateDateColumn()
   createdAt: Date;
