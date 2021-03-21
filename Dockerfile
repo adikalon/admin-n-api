@@ -28,7 +28,9 @@ RUN \
   && mkdir -p /home/node/app \
   && chown -R node:node /home/node/app \
   && mkdir -p /home/node/app/.adminbro \
-  && chown -R node:node /home/node/app/.adminbro
+  && chown -R node:node /home/node/app/.adminbro \
+  && mkdir -p /home/node/app/temp \
+  && chown -R node:node /home/node/app/temp
 WORKDIR /home/node/app
 USER node
 COPY --chown=node:node package*.json ./
@@ -47,7 +49,9 @@ RUN \
   && mkdir -p /home/node/app \
   && chown -R node:node /home/node/app \
   && mkdir -p /home/node/app/.adminbro \
-  && chown -R node:node /home/node/app/.adminbro
+  && chown -R node:node /home/node/app/.adminbro \
+  && mkdir -p /home/node/app/temp \
+  && chown -R node:node /home/node/app/temp
 WORKDIR /home/node/app
 USER node
 COPY --chown=node:node package*.json ./

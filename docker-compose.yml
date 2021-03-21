@@ -63,6 +63,7 @@ services:
       - /home/node/app/node_modules
       - /home/node/app/dist
       - /home/node/app/.adminbro
+      - /home/node/app/temp
 
   nginx:
     container_name: ${PREFIX}-nginx
